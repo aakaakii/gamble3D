@@ -1,0 +1,12 @@
+# Build directories
+build/
+bin/
+
+# CMake files
+Makefile
+
+# Editor Settings
+.vscode/
+
+# AI data
+.github/
