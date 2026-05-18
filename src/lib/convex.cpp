@@ -1,7 +1,13 @@
 #include "lib/convex.h"
-#include <math.h>
+#include <cmath>
 #include <set>
 #include <map>
+using gm::vec3;
+using gm::cross;
+
+namespace {
+
+constexpr float kEpsilon = 1e-6f;
 
 struct Face {
 	int v[3];
@@ -18,9 +24,11 @@ struct Face {
 	
 	// 检查点 p 是否在面外（可见）
 	bool can_see(const vec3& p, const std::vector<vec3>& pts) const {
-		return (p - pts[v[0]]) * normal > 1e-6f;
+		return (p - pts[v[0]]) * normal > kEpsilon;
 	}
 };
+
+} // namespace
 
 std::vector<std::pair<vec3, vec3>> convex3d(std::vector<vec3> points) {
 	int n = points.size();
@@ -39,9 +47,9 @@ std::vector<std::pair<vec3, vec3>> convex3d(std::vector<vec3> points) {
 	bool found = false;
 	for (int i = 2; i < n; ++i) {
 		vec3 nm = cross(points[1] - points[0], points[i] - points[0]);
-		if (nm.leng() > 1e-7f) {
+		if (nm.length() > kEpsilon) {
 			for (int j = i + 1; j < n; ++j) {
-				if (abs((points[j] - points[0]) * nm) > 1e-7f) {
+				if (std::fabs((points[j] - points[0]) * nm) > kEpsilon) {
 					// 建立初始四面体
 					int a = 0, b = 1, c = i, d = j;
 					if ((points[d] - points[a]) * cross(points[b] - points[a], points[c] - points[a]) > 0)

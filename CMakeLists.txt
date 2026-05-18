@@ -42,6 +42,7 @@ add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
 # 添加头文件搜索路径
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${INCLUDE_DIR}
+    ${INCLUDE_DIR}/core
     ${RAYLIB_DIR}/include
 )
 

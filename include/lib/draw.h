@@ -4,9 +4,11 @@
 #include <vector>
 #include <math.h>
 #include "lib/types.h"
-using namespace std;
+using gm::vec2;
+using gm::vec3;
+using gm::COLOR;
 
-template<class T> vector<T> operator + (vector<T> a, const vector<T>& b) {
+template<class T> std::vector<T> operator + (std::vector<T> a, const std::vector<T>& b) {
 	a.insert(a.end(), b.begin(), b.end()); return a;
 }
 
@@ -16,11 +18,10 @@ void drawLine(vec2 begin, vec2 end, Color color);
 void drawRect(vec2 pos, vec2 siz, COLOR color);
 void drawCircleRing(vec2 pos, Color color, float rad, float p = .1);
 void drawTriangle(vec2 a, vec2 b, vec2 c, Color color);
-void drawPolygon(const vector<vec2>& dots, Color color);
-void drawRoundRect(vec2 pos, vec2 side, float thick, Color color);
+void drawPolygon(const std::vector<vec2>& dots, Color color);
 void drawLineF(vec2 begin, vec2 end, float wight, Color color);
 float mix(float a, float b, float p);
 COLOR mix(COLOR a, COLOR b, float p);
 const float pi = acos(-1);
-vector<vec2> gencircle(vec2 o, float begin, float end, float rad, float p = .2);
+std::vector<vec2> gencircle(vec2 o, float begin, float end, float rad, float p = .2);
 #endif

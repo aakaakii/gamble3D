@@ -4,6 +4,9 @@
 #include "lib/draw.h"
 #include <random>
 #include <string>
+using gm::vec2;
+using gm::vec3;
+using gm::COLOR;
 
 extern std::random_device rdc;
 extern std::mt19937 mtrnd;

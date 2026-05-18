@@ -1,10 +1,13 @@
-#include <math.h>
-#include <random>
-#include <chrono>
+#include <cmath>
 #include <vector>
 #include <string>
-using namespace std;
 #include "lib/draw.h"
+using namespace std;
+using gm::vec2;
+using gm::vec3;
+using gm::COLOR;
+using gm::cross;
+using gm::mix;
 vector<vec2> gencircle(vec2 o, float begin, float end, float rad, float p) {
 	vector<vec2> res;
 	if(end < begin) p = -p;
@@ -44,22 +47,13 @@ void drawCircleRing(vec2 pos, Color color, float rad, float p) {
 	drawCircle(pos, mix(color, BLACK, .5), rad);
 	drawCircle(pos, color, rad * (1 - p));
 }
-void drawTraingle(vec2 a, vec2 b, vec2 c, Color color) {
+void drawTriangle(vec2 a, vec2 b, vec2 c, Color color) {
 	if(cross(b-a, c-a) > 0) swap(b, c);
 	DrawTriangle(a, b, c, color);
 }
 void drawPolygon(const vector<vec2>& dots, Color color) {
 	for(int i = 2; i < (int)dots.size(); ++i)
-		drawTraingle(dots[0], dots[i-1], dots[i], color);
-}
-void drawRoundRect(vec2 pos, vec2 side, float thick, Color color) {
-	drawPolygon(
-	    gencircle(pos + side, 0, pi/2, thick) +
-	    gencircle(pos + vec2(0, side.y), pi/2, pi, thick) +
-	    gencircle(pos,-pi,-pi/2, thick) +
-	    gencircle(pos + vec2(side.x, 0),-pi/2, 0, thick),
-	    color
-	);
+		drawTriangle(dots[0], dots[i-1], dots[i], color);
 }
 void drawLineF(vec2 begin, vec2 end, float wight, Color color) {
 	vec2 d = end - begin;

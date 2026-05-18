@@ -55,6 +55,33 @@ void InitBloom() {
 	TraceLog(LOG_INFO, "Bloom: Initialized successfully");
 }
 
+void ResizeBloom(int width, int height) {
+	if(!bloomInitialized || (screenWidth == width && screenHeight == height)) return;
+	
+	// 卸载旧的
+	UnloadRenderTexture(sceneTarget);
+	UnloadRenderTexture(brightnessTarget);
+	UnloadRenderTexture(hBlurTarget[0]);
+	UnloadRenderTexture(hBlurTarget[1]);
+	UnloadRenderTexture(vBlurTarget[0]);
+	UnloadRenderTexture(vBlurTarget[1]);
+	
+	screenWidth  = width;
+	screenHeight = height;
+	
+	// 重建
+	sceneTarget      = LoadRenderTexture(screenWidth, screenHeight);
+	brightnessTarget = LoadRenderTexture(screenWidth, screenHeight);
+	hBlurTarget[0]   = LoadRenderTexture(screenWidth, screenHeight);
+	hBlurTarget[1]   = LoadRenderTexture(screenWidth, screenHeight);
+	vBlurTarget[0]   = LoadRenderTexture(screenWidth, screenHeight);
+	vBlurTarget[1]   = LoadRenderTexture(screenWidth, screenHeight);
+	
+	Vector2 res = {(float)screenWidth, (float)screenHeight};
+	int locRes = GetShaderLocation(gaussianBlurShader, "resolution");
+	SetShaderValue(gaussianBlurShader, locRes, &res, SHADER_UNIFORM_VEC2);
+}
+
 void BeginBloomRender() {
 	if(!bloomInitialized) InitBloom();
 	

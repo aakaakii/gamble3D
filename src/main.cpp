@@ -1,270 +1,245 @@
-#include <iostream>
 #include <raylib.h>
-#include <math.h>
 #include <raymath.h>
 #include <algorithm>
-#include <fstream>
-#include <ctime>
+#include <cstdio>
+#include <vector>
+
 #include <lib/consts.h>
 #include <lib/draw.h>
 #include <lib/convex.h>
 #include <lib/render.h>
-int N = 80;
-const vec3 G = vec3(0, -.3, 0);
+#include <core/GameState.h>
 
-inline vec3 uniformvec3() {
-	return vec3(uniform() - .5, uniform() - .5, uniform() - .5).normal();
-}
+using namespace std;
+using gm::vec2;
+using gm::vec3;
+using gm::COLOR;
+using gm::mix;
+using gm::cross;
 
-struct Node {
-	vec3 pos, vel;
-	COLOR color;
-	Node(vec3 pos, COLOR color): pos(pos), color(color) {
-		vel = uniformvec3() * 2 + (vec3){0, uniform() * 2, 0};
-	}
-	void update() {
-		pos += vel, vel += G;
-	}
-};
-
-struct NameTag {
-	string str;
-	vec2 pos, to;
-};
-
-struct Person {
-	string str;
-	vec3 pos, to;
-	float rad, torad;
-};
-
-const float radius = 200;
-vector<Person> pers;
-vector<Node> nodes;
-vector<vec3> stars;
-vector<string> names;
-vector<NameTag> tag;
-string ALLCHARS, TMP;
-int dieMax = 0, dieMin = 0, winCnt = 0;
-double state1time, state2time, targetSpeed;
-int screenWidth, screenHeight;
-void init() {
-	ifstream fin("resources/data.txt");
-	ifstream sin("resources/settings.txt");
-	sin >> dieMin >> dieMax >> winCnt;
-	sin >> state1time >> state2time >> targetSpeed;
-	sin >> screenWidth >> screenHeight;
-	while(fin >> TMP) names.push_back(TMP);
-	N = names.size();
-	pers.resize(N), tag.resize(N);
-	ALLCHARS += "剩余人数: 01234567890PLAY";
-	for(int i = 0; i < N; ++i) {
-		pers[i].to = uniformvec3() * radius;
-		tag[i].str = pers[i].str = names[i];
-		ALLCHARS += pers[i].str;
-	}
-	for(int i = 0; i < 500; ++i) {
-		stars.push_back(uniformvec3() * 3 * radius);
-	}
-}
-
-Matrix transform(vec3 axis, float theta) {
-	Matrix M = MatrixRotate((Vector3)axis, theta);
-	for(auto& p: pers) p.to = Vector3Transform((Vector3)p.to, M);
-	return M;
+// ---- 爆炸效果 ----
+static void spawnExplosion(gm::GameState& gs, int idx) {
+	for(int t = 32; t--; )
+		gs.particles.emplace_back(gs.people[idx].pos, mix(LIGHTGRAY, BEIGE, uniform()));
 }
 
 int main() {
-	init();
-	srand(time(0));
-	SetConfigFlags(FLAG_MSAA_4X_HINT);
-	InitWindow(screenWidth, screenHeight, "gamble3D");
-	loadFont("resources/font.ttf", ALLCHARS);
+	using enum gm::Phase;
 	
-	Camera3D camera;
+	gm::GameState gs;
+	gs.loadNames("resources/data.txt");
+	gs.loadConfig("resources/settings.txt");
+	gs.init();
+	
+	SetConfigFlags(FLAG_MSAA_4X_HINT);
+	InitWindow(gs.config.screenWidth, gs.config.screenHeight, "gamble3D");
+	loadFont("resources/font.ttf", gs.allChars);
+	
+	Camera3D camera{};
 	camera.position = {325, 0, 0};
-	camera.target = (Vector3){ 0.0f, 0.0f, 0.0f };
-	camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };
-	camera.fovy = 100;
+	camera.target   = {0, 0, 0};
+	camera.up       = {0, 1, 0};
+	camera.fovy     = 100;
 	camera.projection = CAMERA_PERSPECTIVE;
 	
 	SetTargetFPS(60);
 	
 	vec3 axis = {0, 1, 0};
+	gs.phase = Menu;
 	
-	int state = -1;
-	int isdown = 0;
-	float rotationSpeed = .004;
-	int dieN = min(rand() % (dieMax - dieMin + 1) + dieMin, N - winCnt);
-	int flagt = 0, flagp = -1;
+	auto& cfg = gs.config;
+	auto dieCount = [&]() -> int {
+		return min(rand() % (cfg.dieMax - cfg.dieMin + 1) + cfg.dieMin, gs.N - cfg.winCnt);
+	};
+	int dieN = dieCount();
+	int fireworksTimer = 0, fireworksStep = -1;
 	
-	while (!WindowShouldClose()) {
+	while(!WindowShouldClose()) {
 		double dt = GetFrameTime();
+		auto& N = gs.N;
 		
-		for(int i = 0; i < (int)nodes.size(); ++i) {
-			nodes[i].update();
-			if(nodes[i].pos.y < -1000) {
-				nodes.erase(nodes.begin() + i);
+		// ===== 粒子生命周期 =====
+		for(int i = 0; i < (int)gs.particles.size(); ++i) {
+			gs.particles[i].update(gm::GameState::kGravity);
+			if(gs.particles[i].pos.y < -1000) {
+				gs.particles.erase(gs.particles.begin() + i);
 				--i;
-				if(state == 3) state = 0;
+				if(gs.phase == Exploding) gs.phase = Accelerating;
 			}
 		}
 		
-		if(state != 4) {
+		// ===== 球面斥力 =====
+		if(gs.phase != Finished) {
+			constexpr float kRepel = 50000.f;
 			for(int i = 0; i < N; ++i) {
 				for(int j = 0; j < N; ++j) {
-					if(i != j) {
-						vec3 d = (pers[i].to - pers[j].to);
-						pers[i].to += d.normal() * 50000 * pow(d.leng(), -2);
-					}
+					if(i == j) continue;
+					vec3 d = gs.people[i].target - gs.people[j].target;
+					gs.people[i].target += d.normalized() * kRepel / (d.length() * d.length());
 				}
-				pers[i].to = pers[i].to.normal() * radius;
+				gs.people[i].target = gs.people[i].target.normalized() * gm::GameState::kSphereRadius;
 			}
 		}
 		
+		// ===== 位置/大小插值 =====
 		for(int i = 0; i < N; ++i) {
-			pers[i].pos = mix(pers[i].pos, pers[i].to, .1);
-			pers[i].rad = mix(pers[i].rad, pers[i].torad, .1);
+			gs.people[i].pos   = mix(gs.people[i].pos,   gs.people[i].target,    .1f);
+			gs.people[i].rad   = mix(gs.people[i].rad,   gs.people[i].targetRad, .1f);
+			gs.tags[i].pos     = mix(gs.tags[i].pos,     gs.tags[i].target,      .2f);
 		}
 		
-		if(state == -1) {
-			if(IsMouseButtonPressed(0)) {
+		// ===== 标签位置更新 =====
+		for(int i = 0; i < N; ++i) {
+			gs.tags[i].target = {75, (float)(i % 30) * 30 + 55};
+		}
+		
+		// ===== 输入 =====
+		if(gs.phase == Menu) {
+			if(IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
 				vec2 p = GetMousePosition();
-				if(((screenWidth - 600) / 2 <= p.x) and (p.x <= (screenWidth + 600) / 2) and
-					((screenHeight - 250) / 2 <= p.y) and (p.y <= (screenHeight + 250) / 2)) {
-					isdown = 1;
-				}
+				int w = cfg.screenWidth, h = cfg.screenHeight;
+				if(abs(p.x - w/2.f) <= 300 && abs(p.y - h/2.f) <= 125)
+					gs.mouseDown = true;
 			}
-			if(IsMouseButtonReleased(0)) {
-				if(isdown) {
-					state = 0;
-				}
+			if(IsMouseButtonReleased(MOUSE_LEFT_BUTTON) && gs.mouseDown) {
+				gs.mouseDown = false;
+				gs.phase = Accelerating;
 			}
 		}
 		
-		if(state == 0) {
-			float addVel = targetSpeed / (state1time / dt);
-			if(rotationSpeed < targetSpeed)
-				rotationSpeed += addVel;
-			else state = 1;
+		// ===== 状态机 =====
+		if(gs.phase == Accelerating) {
+			float add = (float)cfg.targetSpeed / (float)(cfg.state1time / dt);
+			if(gs.rotationSpeed < (float)cfg.targetSpeed)
+				gs.rotationSpeed += add;
+			else
+				gs.phase = Decelerating;
 		}
 		
-		if(IsKeyPressed(KEY_SPACE)) state = 1, rotationSpeed = 0;
-		
-		if(state == 1) {
-			float decVel = exp((log(0.001)-log(targetSpeed)) / (state2time / dt));
-			if(rotationSpeed > 0.001) rotationSpeed *= decVel;
-			else state = 2;
+		if(IsKeyPressed(KEY_SPACE)) {
+			gs.phase = Decelerating;
+			gs.rotationSpeed = 0;
 		}
 		
-		auto bomb = [&](int p){
-			for(int t = 32; t--; )
-				nodes.push_back(Node(pers[p].pos, mix(LIGHTGRAY, BEIGE, uniform())));
-		};
+		if(gs.phase == Decelerating) {
+			float ratio = exp((log(0.001) - log(cfg.targetSpeed)) / (cfg.state2time / dt));
+			if(gs.rotationSpeed > 0.001f)
+				gs.rotationSpeed *= ratio;
+			else
+				gs.phase = Eliminating;
+		}
 		
-		vector<int> per;
-		for(int i = 0; i < N; ++i) per.push_back(i);
-		sort(per.begin(), per.end(), [&](const auto& x, const auto& y){
-			return (pers[x].pos - camera.position).leng() < (pers[y].pos - camera.position).leng();
+		// ===== 按最近距离排序 =====
+		vector<int> order(N);
+		for(int i = 0; i < N; ++i) order[i] = i;
+		sort(order.begin(), order.end(), [&](int a, int b){
+			return (gs.people[a].pos - camera.position).length()
+			     < (gs.people[b].pos - camera.position).length();
 		});
 		
-		for(int i = 0; i < N; ++i) {
-			pers[i].torad = 150000 / pow((pers[i].pos - camera.position).leng(), 1.5);
-		}
+		for(int i = 0; i < N; ++i)
+			gs.people[i].targetRad = 150000.f / pow((gs.people[i].pos - camera.position).length(), 1.5f);
 		
-		for(int i = 0; i < dieN; ++i) {
-			pers[per[i]].torad += 120;
-		}
+		for(int i = 0; i < dieN; ++i)
+			gs.people[order[i]].targetRad += 120;
 		
-		if(state == 2) {
+		// ===== 淘汰 =====
+		if(gs.phase == Eliminating) {
 			vector<int> del;
-			for(int i = 0; i < dieN; ++i)
-				del.push_back(per[i]);
+			for(int i = 0; i < dieN; ++i) del.push_back(order[i]);
 			sort(del.begin(), del.end());
-			for(int i = del.size() - 1; i >= 0; --i) {
-				bomb(del[i]);
-				pers.erase(pers.begin() + del[i]), --N;
-				tag.erase(tag.begin() + del[i]);
+			for(int i = (int)del.size() - 1; i >= 0; --i) {
+				spawnExplosion(gs, del[i]);
+				gs.people.erase(gs.people.begin() + del[i]);
+				gs.tags.erase(gs.tags.begin() + del[i]);
+				--N;
 			}
-			state = 3;
-			dieN = min(rand() % (dieMax - dieMin + 1) + dieMin, N - winCnt);
-			if(N == winCnt) state = 4;
+			gs.phase = Exploding;
+			dieN = dieCount();
+			if(N == cfg.winCnt) gs.phase = Finished;
 		}
 		
-		if(state == 4) {
-			static const int L = -200, R = 200;
-			for(int i = 0; i < winCnt; ++i) {
-				pers[i].to = {0, L + 1.f * (R - L) * (i+1) / (winCnt + 1), 0};
-				pers[i].torad = 175;
+		// ===== 获胜动画 =====
+		if(gs.phase == Finished) {
+			constexpr int L = -200, R = 200;
+			for(int i = 0; i < cfg.winCnt; ++i) {
+				gs.people[i].target = {0, L + 1.f * (R - L) * (i + 1) / (cfg.winCnt + 1), 0};
+				gs.people[i].targetRad = 175;
 			}
-			camera.position = (Vector3)mix(camera.position, {0, 0, -200}, .1);
+			auto camTarget = mix((vec3)camera.position, vec3{0, 0, -200}, .1f);
+			camera.position = {camTarget.x, camTarget.y, camTarget.z};
 			camera.up = {0, 1, 0};
-			if(!flagt--) {
-				for(int t = 64; t--; ) nodes.push_back(Node({-200, flagp * 50.f, 0}, mix(RED, GOLD, uniform())));
-				for(int t = 64; t--; ) nodes.push_back(Node({ 200, flagp * 50.f, 0}, mix(RED, GOLD, uniform())));
-				flagt = 20, flagp = ++flagp == 5 ? -4 : flagp;
+			if(--fireworksTimer <= 0) {
+				for(int t = 64; t--; )
+					gs.particles.emplace_back(vec3{-200.f, fireworksStep * 50.f, 0}, mix(RED, GOLD, uniform()));
+				for(int t = 64; t--; )
+					gs.particles.emplace_back(vec3{ 200.f, fireworksStep * 50.f, 0}, mix(RED, GOLD, uniform()));
+				fireworksTimer = 20;
+				fireworksStep = (fireworksStep == 4) ? -4 : fireworksStep + 1;
 			}
 		}
 		
-		for(int i = 0; i < N; ++i) { int j = i + 1;
-			tag[i].to = {j / 30 * 150 + 75.f, j % 30 * 30 + 25.f};
-			tag[i].pos = mix(tag[i].pos, tag[i].to, .2);
-		}
-		
+		// ===== 渲染 =====
 		BeginBloomRender();
-		
 		BeginMode3D(camera);
 		
-		if(state != 4) {
-			axis = Vector3Transform((Vector3)axis, MatrixRotate(camera.position, uniform() * .02));
-			camera.position = Vector3Transform(camera.position, MatrixRotate((Vector3)axis, rotationSpeed));
-			camera.up = Vector3Transform(camera.up, MatrixRotate((Vector3)axis, rotationSpeed));
+		if(gs.phase != Finished) {
+			axis = vec3(Vector3Transform(Vector3{axis.x, axis.y, axis.z},
+				MatrixRotate(camera.position, uniform() * .02f)));
+			camera.position = Vector3Transform(camera.position,
+				MatrixRotate(Vector3{axis.x, axis.y, axis.z}, gs.rotationSpeed));
+			camera.up = Vector3Transform(camera.up,
+				MatrixRotate(Vector3{axis.x, axis.y, axis.z}, gs.rotationSpeed));
 		}
 		
-		if(state != 4) {
-			// Color color = mix(ColorFromHSV(GetTime()*30, 1, 1), WHITE, .5);
-			Color color = ColorFromHSV(GetTime()*30, 1, 1);
+		if(gs.phase != Finished) {
+			Color color = ColorFromHSV(GetTime() * 30, 1, 1);
 			vector<vec3> poss;
-			for(int i = 0; i < N; ++i) poss.push_back(pers[i].pos);
-			auto res = convex3d(poss);
-			for(auto& [a, b]: res) {
-				DrawCylinderEx((Vector3)a, (Vector3)b, 1, 1, 16, color);
-				// DrawLine3D((Vector3)a, (Vector3)b, color);
-			}
+			for(int i = 0; i < N; ++i) poss.push_back(gs.people[i].pos);
+			for(auto& [a, b] : convex3d(poss))
+				DrawCylinderEx(Vector3{a.x, a.y, a.z}, Vector3{b.x, b.y, b.z}, 1, 1, 16, color);
 		}
 		
-		for(int i = 0; i < (int)nodes.size(); ++i) {
-			DrawSphere((Vector3)nodes[i].pos, 1, nodes[i].color);
-		}
+		for(auto& p : gs.particles)
+			DrawSphere(Vector3{p.pos.x, p.pos.y, p.pos.z}, 1, p.color);
 		
-		for(auto& V: stars) DrawSphere((Vector3)V, 1, WHITE);
+		for(auto& s : gs.stars)
+			DrawSphere(Vector3{s.x, s.y, s.z}, 1, WHITE);
 		
 		EndMode3D();
 		
+		// 3D 人名标签
 		for(int i = 0; i < N; ++i) {
-			Color color = ColorFromHSV(GetTime() * 30 + i * 37 % 360, .2, .6);
-			DrawTextPlus(GetWorldToScreen((Vector3)pers[i].pos, camera), pers[i].rad, pers[i].str.data(), color);
+			Color color = ColorFromHSV(GetTime() * 30 + i * 37 % 360, .2f, .6f);
+			DrawTextPlus(GetWorldToScreen(
+				Vector3{gs.people[i].pos.x, gs.people[i].pos.y, gs.people[i].pos.z}, camera),
+				gs.people[i].rad, gs.people[i].text.data(), color);
 		}
 		
-		if(state == -1) {
-			COLOR color = isdown ? COLOR(255, 255, 255, 255 * .8) : COLOR(192, 192, 192, 192 * .8);
-			DrawRectangle((screenWidth - 600) / 2, (screenHeight - 250) / 2, 600, 250, color);
-			DrawTextPlus({screenWidth / 2, screenHeight / 2}, 64, "PLAY\n", WHITE);
+		// 开始按钮
+		if(gs.phase == Menu) {
+			int w = cfg.screenWidth, h = cfg.screenHeight;
+			COLOR col = gs.mouseDown
+				? COLOR(255, 255, 255, 204)
+				: COLOR(192, 192, 192, 153);
+			DrawRectangle((w - 600) / 2, (h - 250) / 2, 600, 250, col);
+			DrawTextPlus({w / 2.f, h / 2.f}, 64, "PLAY\n", WHITE);
 		}
 		
-		static char str[32];
-		sprintf(str, "剩余人数: %d", N);
-		DrawTextPlus({75, 25}, 25, str);
+		// HUD
+		static char buf[32];
+		snprintf(buf, sizeof(buf), "剩余人数: %d", N);
+		DrawTextPlus({75, 25}, 25, buf);
+		DrawFPS(cfg.screenWidth - 100, cfg.screenHeight - 50);
 		
-		DrawFPS(screenWidth - 100, screenHeight - 50);
-		
-		for(int i = 0; i < N; ++i) {
-			DrawTextPlus(tag[i].pos, 25, tag[i].str.data());
-		}
+		// 侧边栏姓名
+		for(int i = 0; i < N; ++i)
+			DrawTextPlus(gs.tags[i].pos, 25, gs.tags[i].text.data());
 		
 		EndBloomRender();
 	}
 	
 	unloadFont();
 	CloseWindow();
+	return 0;
 }
