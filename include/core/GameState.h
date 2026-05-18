@@ -3,6 +3,7 @@
 
 #include "lib/types.h"
 #include "core/Config.h"
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -64,7 +65,7 @@ struct GameState {
 	// 运行时变量
 	int   N = 0;
 	float rotationSpeed = .004f;
-	int   dieCount      = 0;     // 本轮淘汰人数
+	int   dieN          = 0;     // 本轮淘汰人数
 	bool  mouseDown     = false;
 	
 	// 烟花效果（获胜时）
@@ -75,6 +76,11 @@ struct GameState {
 	void loadConfig(const std::string& path);
 	void loadNames(const std::string& path);
 	void init();
+	
+	/// 计算本轮淘汰人数
+	int calcDieCount() const {
+		return std::min(rand() % (config.dieMax - config.dieMin + 1) + config.dieMin, N - config.winCnt);
+	}
 };
 
 } // namespace gm
