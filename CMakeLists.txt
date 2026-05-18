@@ -16,7 +16,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG")
 
 # Windows 特定编译选项（UTF-8 输入，GBK 执行）
 if(WIN32)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -finput-charset=UTF-8 -fexec-charset=gbk")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -finput-charset=utf-8 -fexec-charset=utf-8")
 endif()
 
 # 默认构建类型为 Release
