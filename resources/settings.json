@@ -12,5 +12,11 @@
   "screen": {
     "width": 1920,
     "height": 1080
+  },
+  "bloom": {
+    "enabled": true,
+    "threshold": 0.0,
+    "intensity": 0.8,
+    "blurIterations": 8
   }
 }

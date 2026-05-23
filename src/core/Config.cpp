@@ -35,6 +35,14 @@ Config Config::load(const std::string& path) {
 		cfg.screenWidth = doc["screen"]["width"];
 		cfg.screenHeight = doc["screen"]["height"];
 		
+		// 解析 bloom 参数 (可选，不存在时使用默认值)
+		if(doc.contains("bloom")) {
+			cfg.bloomEnabled        = doc["bloom"].value("enabled", true);
+			cfg.bloomThreshold      = doc["bloom"].value("threshold", 0.0f);
+			cfg.bloomIntensity      = doc["bloom"].value("intensity", 0.8f);
+			cfg.bloomBlurIterations = doc["bloom"].value("blurIterations", 8);
+		}
+		
 	} catch(const std::exception& e) {
 		std::cerr << "Warning: error parsing JSON from " << path << ": " << e.what() << ", using defaults.\n";
 		return Config(); // 返回默认配置

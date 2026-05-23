@@ -11,6 +11,7 @@ int main() {
 	gm::GameState gs;
 	gs.loadNames("resources/data.txt");
 	gs.loadConfig("resources/settings.json");
+	ApplyBloomConfig(gs.config);
 	gs.init();
 	gs.dieN = gs.calcDieCount();
 

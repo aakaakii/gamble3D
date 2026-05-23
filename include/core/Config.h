@@ -17,6 +17,12 @@ struct Config {
 	int screenWidth  = 1920;
 	int screenHeight = 1080;
 	
+	// Bloom 效果参数
+	bool bloomEnabled    = true;
+	float bloomThreshold = 0.0f;
+	float bloomIntensity = 0.8f;
+	int bloomBlurIterations = 8;
+	
 	/// 从 settings.json 读取 (使用 nlohmann/json 解析)
 	static Config load(const std::string& path);
 };

@@ -1,11 +1,13 @@
 #include "lib/render.h"
+#include "core/Config.h"
 #include <raymath.h>
 #include <rlgl.h>
 
 // Bloom 参数默认值
+bool g_bloomEnabled    = true;
 float g_bloomThreshold = 0;
 float g_bloomIntensity = 0.8f;
-int g_blurIterations = 8;
+int g_blurIterations   = 8;
 
 // Bloom 相关资源
 static RenderTexture2D sceneTarget;
@@ -88,12 +90,19 @@ void BeginBloomRender() {
 	BeginDrawing();
 	ClearBackground({0, 0, 0, 255});
 	
+	if(!g_bloomEnabled) return;
+	
 	// 渲染到场景纹理
 	BeginTextureMode(sceneTarget);
 	ClearBackground({0, 0, 0, 255});
 }
 
 void EndBloomRender() {
+	if(!g_bloomEnabled) {
+		EndDrawing();
+		return;
+	}
+	
 	EndTextureMode();  // 结束 sceneTarget
 	
 	if(!bloomInitialized) {
@@ -183,4 +192,14 @@ void EndBloomRender() {
 	rlActiveTextureSlot(0);
 	
 	EndDrawing();
+}
+
+void ApplyBloomConfig(const gm::Config& config) {
+	g_bloomEnabled        = config.bloomEnabled;
+	g_bloomThreshold      = config.bloomThreshold;
+	g_bloomIntensity      = config.bloomIntensity;
+	g_blurIterations      = config.bloomBlurIterations;
+	
+	TraceLog(LOG_INFO, "Bloom: config applied (enabled=%d, threshold=%.2f, intensity=%.2f, iterations=%d)",
+		g_bloomEnabled, g_bloomThreshold, g_bloomIntensity, g_blurIterations);
 }
