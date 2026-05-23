@@ -1,8 +1,8 @@
 # ==============================================================================
-# CMakeLists.txt for gamble3D
+# CMakeLists.txt for lottery3D
 # ==============================================================================
 cmake_minimum_required(VERSION 3.16)
-project(gamble3D VERSION 1.0 LANGUAGES CXX)
+project(lottery3D VERSION 1.0 LANGUAGES CXX)
 
 # ==================== C++ 标准配置 ====================
 set(CMAKE_CXX_STANDARD 23)

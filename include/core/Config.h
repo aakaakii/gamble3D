@@ -17,7 +17,7 @@ struct Config {
 	int screenWidth  = 1920;
 	int screenHeight = 1080;
 	
-	/// 从 settings.txt 读取
+	/// 从 settings.json 读取 (使用 nlohmann/json 解析)
 	static Config load(const std::string& path);
 };
 

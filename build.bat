@@ -2,7 +2,7 @@
 setlocal
 
 REM ==============================================
-REM build.bat - CMake Build Script for gamble3D
+REM build.bat - CMake Build Script for lottery3D
 REM ==============================================
 REM Usage:
 REM   build.bat           - Build Release
@@ -14,7 +14,7 @@ REM ==============================================
 
 set BUILD_DIR=build
 set BIN_DIR=bin
-set TARGET=gamble3D
+set TARGET=lottery3D
 set "CMAKE=C:\Program Files\CMake\bin\cmake.exe"
 
 REM Add CMake to PATH

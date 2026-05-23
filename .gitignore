@@ -10,3 +10,5 @@ Makefile
 
 # AI data
 .github/
+
+log.txt

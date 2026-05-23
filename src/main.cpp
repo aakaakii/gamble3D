@@ -10,12 +10,12 @@ int main() {
 
 	gm::GameState gs;
 	gs.loadNames("resources/data.txt");
-	gs.loadConfig("resources/settings.txt");
+	gs.loadConfig("resources/settings.json");
 	gs.init();
 	gs.dieN = gs.calcDieCount();
 
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
-	InitWindow(gs.config.screenWidth, gs.config.screenHeight, "gamble3D");
+	InitWindow(gs.config.screenWidth, gs.config.screenHeight, "lottery3D");
 	loadFont("resources/font.ttf", gs.allChars);
 
 	Camera3D camera{};
