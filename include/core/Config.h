@@ -6,8 +6,8 @@
 namespace gm {
 
 struct Config {
-	int dieMin  = 1;
-	int dieMax  = 4;
+	int eliminateMin = 1;
+	int eliminateMax = 4;
 	int winCnt  = 2;
 	
 	double state1time  = 2.0;

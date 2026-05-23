@@ -65,7 +65,7 @@ struct GameState {
 	// 运行时变量
 	int   N = 0;
 	float rotationSpeed = .004f;
-	int   dieN          = 0;     // 本轮淘汰人数
+	int   eliminateN    = 0;     // 本轮淘汰人数
 	bool  mouseDown     = false;
 	
 	// 烟花效果（获胜时）
@@ -78,8 +78,8 @@ struct GameState {
 	void init();
 	
 	/// 计算本轮淘汰人数
-	int calcDieCount() const {
-		return std::min(rand() % (config.dieMax - config.dieMin + 1) + config.dieMin, N - config.winCnt);
+	int calcEliminateCount() const {
+		return std::min(rand() % (config.eliminateMax - config.eliminateMin + 1) + config.eliminateMin, N - config.winCnt);
 	}
 };
 

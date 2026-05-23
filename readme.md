@@ -14,8 +14,8 @@ data.txt 中包含所有参与抽奖成员的名称。用空白字符（换行/�
 
 | 字段 | 类型 | 说明 |
 | :--- | :--- | :--- |
-| `die.min` | 整数 | 每次出局人数下限，建议 $1$ |
-| `die.max` | 整数 | 每次出局人数上限，建议 $\le 5$ |
+| `eliminate.min` | 整数 | 每次出局人数下限，建议 $1$ |
+| `eliminate.max` | 整数 | 每次出局人数上限，建议 $\le 5$ |
 | `winCnt` | 整数 | 中奖人数（最终剩下的人数） |
 | `timing.accelerationTime` | 浮点数 | 加速阶段时长（秒） |
 | `timing.decelerationTime` | 浮点数 | 减速阶段时长（秒） |
@@ -36,7 +36,7 @@ data.txt 中包含所有参与抽奖成员的名称。用空白字符（换行/�
 
 ```json
 {
-  "die": { "min": 1, "max": 1 },
+  "eliminate": { "min": 1, "max": 1 },
   "winCnt": 5,
   "timing": {
     "accelerationTime": 4.0,

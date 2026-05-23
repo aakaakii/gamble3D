@@ -19,9 +19,9 @@ Config Config::load(const std::string& path) {
 		nlohmann::json doc;
 		file >> doc;
 		
-		// 解析 die 范围
-		cfg.dieMin = doc["die"]["min"];
-		cfg.dieMax = doc["die"]["max"];
+		// 解析淘汰人数范围
+		cfg.eliminateMin = doc["eliminate"]["min"];
+		cfg.eliminateMax = doc["eliminate"]["max"];
 		
 		// 解析中奖人数
 		cfg.winCnt = doc["winCnt"];

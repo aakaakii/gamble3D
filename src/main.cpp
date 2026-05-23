@@ -13,7 +13,7 @@ int main() {
 	gs.loadConfig("resources/settings.json");
 	ApplyBloomConfig(gs.config);
 	gs.init();
-	gs.dieN = gs.calcDieCount();
+	gs.eliminateN = gs.calcEliminateCount();
 
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
 	InitWindow(gs.config.screenWidth, gs.config.screenHeight, "lottery3D");

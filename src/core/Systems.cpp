@@ -110,7 +110,7 @@ std::vector<int> rankByDistance(GameState& gs, const Camera3D& cam) {
 	for(int i = 0; i < gs.N; ++i)
 		gs.people[i].targetRad = 150000.f / std::pow((gs.people[i].pos - camPos).length(), 1.5f);
 
-	for(int i = 0; i < gs.dieN; ++i)
+	for(int i = 0; i < gs.eliminateN; ++i)
 		gs.people[order[i]].targetRad += 120.f;
 
 	return order;
@@ -120,7 +120,7 @@ void processElimination(GameState& gs, const std::vector<int>& order) {
 	if(gs.phase != Eliminating) return;
 
 	std::vector<int> del;
-	for(int i = 0; i < gs.dieN; ++i) del.push_back(order[i]);
+	for(int i = 0; i < gs.eliminateN; ++i) del.push_back(order[i]);
 	std::sort(del.begin(), del.end());
 
 	for(int i = (int)del.size() - 1; i >= 0; --i) {
@@ -136,7 +136,7 @@ void processElimination(GameState& gs, const std::vector<int>& order) {
 	}
 
 	gs.phase = Exploding;
-	gs.dieN  = gs.calcDieCount();
+	gs.eliminateN = gs.calcEliminateCount();
 	if(gs.N == gs.config.winCnt) gs.phase = Finished;
 }
 
