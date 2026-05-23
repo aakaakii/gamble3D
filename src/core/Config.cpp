@@ -35,6 +35,22 @@ Config Config::load(const std::string& path) {
 		cfg.screenWidth = doc["screen"]["width"];
 		cfg.screenHeight = doc["screen"]["height"];
 		
+		// 解析 Bloom 配置（带默认值）
+		if(doc.contains("effects") && doc["effects"].contains("bloom")) {
+			auto& bloom = doc["effects"]["bloom"];
+			cfg.bloomEnabled = bloom.value("enabled", true);
+			cfg.bloomThreshold = bloom.value("threshold", 0.1f);
+			cfg.bloomIntensity = bloom.value("intensity", 0.8f);
+			cfg.bloomIterations = bloom.value("iterations", 6);
+		}
+		
+		// 解析 Motion Blur 配置（带默认值）
+		if(doc.contains("effects") && doc["effects"].contains("motionBlur")) {
+			auto& mb = doc["effects"]["motionBlur"];
+			cfg.motionBlurEnabled = mb.value("enabled", true);
+			cfg.motionBlurStrength = mb.value("strength", 1.5f);
+		}
+		
 	} catch(const std::exception& e) {
 		std::cerr << "Warning: error parsing JSON from " << path << ": " << e.what() << ", using defaults.\n";
 		return Config(); // 返回默认配置

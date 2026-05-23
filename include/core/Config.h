@@ -17,6 +17,16 @@ struct Config {
 	int screenWidth  = 1920;
 	int screenHeight = 1080;
 	
+	// Bloom 配置
+	bool bloomEnabled = true;
+	float bloomThreshold = 0.1f;
+	float bloomIntensity = 0.8f;
+	int bloomIterations = 6;
+	
+	// Motion Blur 配置
+	bool motionBlurEnabled = true;
+	float motionBlurStrength = 1.5f;
+	
 	/// 从 settings.json 读取 (使用 nlohmann/json 解析)
 	static Config load(const std::string& path);
 };

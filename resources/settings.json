@@ -1,16 +1,28 @@
 {
   "die": {
     "min": 1,
-    "max": 1
+    "max": 4
   },
   "winCnt": 5,
   "timing": {
     "accelerationTime": 4.0,
-    "decelerationTime": 4.0,
-    "targetSpeed": 0.5
+    "decelerationTime": 4.5,
+    "targetSpeed": 0.4
   },
   "screen": {
     "width": 1920,
     "height": 1080
+  },
+  "effects": {
+    "bloom": {
+      "enabled": true,
+      "threshold": 0.1,
+      "intensity": 0.8,
+      "iterations": 6
+    },
+    "motionBlur": {
+      "enabled": true,
+      "strength": 1.5
+    }
   }
 }
